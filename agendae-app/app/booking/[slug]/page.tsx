@@ -1,36 +1,58 @@
 'use client'
 
-import { useState } from 'react'
-import supabase from '../../lib/supabase'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation' // 1. Hook para pegar o slug da URL
+import supabase from '../../../lib/supabase'
 
 export default function Agendar() {
+  const { slug } = useParams() // Captura o "barbearia-do-ze" da URL
+  
+  const [estabelecimento, setEstabelecimento] = useState<any>(null)
   const [nome, setNome] = useState('')
   const [data, setData] = useState('')
   const [hora, setHora] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
+  // 2. Buscar dados do estabelecimento ao carregar a página
+  useEffect(() => {
+    async function loadEstabelecimento() {
+      const { data, error } = await supabase
+        .from('estabelecimentos')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+
+      if (data) setEstabelecimento(data)
+    }
+    loadEstabelecimento()
+  }, [slug])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!estabelecimento) return
+    
     setMessage(null)
     setLoading(true)
 
-    // 1️⃣ Verificar conflito
+    // 3. Verificar conflito APENAS para este estabelecimento
     const { data: existing } = await supabase
       .from('bookings')
       .select('id')
+      .eq('estabelecimento_id', estabelecimento.id) // Filtro crucial
       .eq('data', data)
       .eq('hora', hora)
       .limit(1)
 
     if (existing && existing.length > 0) {
-      setMessage('❌ Este horário já está ocupado.')
+      setMessage('❌ Este horário já está ocupado neste estabelecimento.')
       setLoading(false)
       return
     }
 
-    // 2️⃣ Inserir agendamento
+    // 4. Inserir agendamento com o ID do estabelecimento
     const { error } = await supabase.from('bookings').insert({
+      estabelecimento_id: estabelecimento.id, // Vínculo SaaS
       nome,
       data,
       hora,
@@ -39,7 +61,7 @@ export default function Agendar() {
     if (error) {
       setMessage('❌ Erro ao realizar agendamento.')
     } else {
-      setMessage('✅ Agendamento confirmado com sucesso!')
+      setMessage(`✅ Agendamento em ${estabelecimento.nome_negocio} confirmado!`)
       setNome('')
       setData('')
       setHora('')
@@ -48,10 +70,16 @@ export default function Agendar() {
     setLoading(false)
   }
 
+  if (!estabelecimento && !loading) return <p>Carregando perfil...</p>
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Agendar horário</h1>
+        {/* Título dinâmico com o nome do negócio */}
+        <h1 style={styles.title}>{estabelecimento?.nome_negocio || 'Agendar'}</h1>
+        <p style={{textAlign: 'center', fontSize: '14px', marginBottom: '10px'}}>
+           Horário de funcionamento: <br/>{estabelecimento?.horario_abertura} às {estabelecimento?.horario_fechamento}
+        </p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <input
@@ -82,11 +110,11 @@ export default function Agendar() {
             type="submit"
             style={{
               ...styles.button,
-              opacity: loading ? 0.6 : 1,
+              opacity: loading || !estabelecimento ? 0.6 : 1,
             }}
-            disabled={loading}
+            disabled={loading || !estabelecimento}
           >
-            {loading ? 'Agendando...' : 'Agendar'}
+            {loading ? 'Agendando...' : 'Confirmar Agendamento'}
           </button>
         </form>
       </div>
