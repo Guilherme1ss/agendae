@@ -8,9 +8,15 @@ export default function Home() {
       {/* Navbar Simples */}
       <nav style={styles.nav}>
         <div style={styles.logo}>Agendaê</div>
-        <Link href="/login" style={styles.loginBtn}>
-          Entrar
-        </Link>
+        {/* Adicionei styles.navLinks aqui */}
+        <div style={styles.navLinks}>
+          <Link href="/login" style={styles.loginBtn}>
+            Entrar
+          </Link>
+          <Link href="/register" style={styles.loginBtn}>
+            Registrar
+          </Link>
+        </div>
       </nav>
 
       <main style={styles.hero}>
@@ -85,15 +91,23 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: "center",
     borderBottom: "1px solid #eee",
   },
-  logo: {
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "#4f46e5",
+  // NOVO: Contêiner dos links da navbar
+  navLinks: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px", // Isso cria o espaço horizontal entre eles
   },
+
   loginBtn: {
     textDecoration: "none",
     color: "#4f46e5",
     fontWeight: 600,
+    fontSize: "15px", // Ajuste opcional de tamanho
+  },
+  logo: {
+    fontSize: "24px",
+    fontWeight: "bold",
+    color: "#4f46e5",
   },
   hero: {
     textAlign: "center",
